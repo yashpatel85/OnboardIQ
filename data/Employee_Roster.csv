@@ -1,0 +1,5 @@
+EmployeeID,Name,Role,Department,Reporting_Manager,Email
+101,Sarah Jenkins,Project Manager,Engineering,Director of Eng,sarah.j@factorial24.com
+102,Amit Verma,Lead Developer,Engineering,Sarah Jenkins,amit.v@factorial24.com
+103,John Doe,QA Lead,Quality,Sarah Jenkins,john.d@factorial24.com
+104,New Intern,AI Intern,Engineering,Amit Verma,intern@factorial24.com
