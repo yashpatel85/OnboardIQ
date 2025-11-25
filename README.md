@@ -85,6 +85,7 @@ streamlit run app.py
 
 📂 Project Structure
 
+```
 Factorial24_OnboardIQ/
 ├── data/                   # Source documents (PDFs, CSVs, TXTs)
 ├── vectorstore/            # FAISS Index (Generated locally)
@@ -93,7 +94,7 @@ Factorial24_OnboardIQ/
 ├── app.py                  # Main Chatbot Application (Streamlit)
 ├── requirements.txt        # Dependency list
 └── README.md               # Project Documentation
-
+```
 
 🔮 Future Improvements
 
