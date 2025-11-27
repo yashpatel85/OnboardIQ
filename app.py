@@ -1,4 +1,5 @@
 import os
+from dotenv import load_dotenv # <--- ADDED THIS
 from PIL import Image
 import streamlit as st
 from langchain_community.embeddings import HuggingFaceEmbeddings
@@ -8,18 +9,22 @@ from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 
 
-API_KEY = "AIzaSyCDt7Vj-U8d5c8kq063wWb57p1wFIu1c9c"
+load_dotenv()
 
-# if not API_KEY:
-#     st.error("⚠️ Google API Key not found! Please create a .env file containing GOOGLE_API_KEY=your_key")
-#     st.stop()
+
+if not os.getenv("GOOGLE_API_KEY"):
+    st.error("⚠️ Google API Key not found! Please create a .env file containing GOOGLE_API_KEY=your_key")
+    st.stop()
 
 DB_FAISS_PATH = "vectorstore/db_faiss"
 
+# Load the logo safely
+try:
+    im = Image.open("assets/factorial24_logo.ico")
+except FileNotFoundError:
+    st.warning("Logo not found in assets/factorial24_logo.ico. Using default.")
+    im = None 
 
-os.environ["GOOGLE_API_KEY"] = API_KEY
-
-im = Image.open("assets/factorial24_logo.ico")
 st.set_page_config(
     page_title = "Factorial24 OnboardIQ",
     page_icon = im,
@@ -79,6 +84,7 @@ def load_knowledge_base():
 
     
     # Using 'gemini-pro-latest' as confirmed working in your environment
+    
     llm = ChatGoogleGenerativeAI(
         model = "gemini-pro-latest", 
         temperature = 0.3,
