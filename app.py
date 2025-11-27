@@ -8,7 +8,12 @@ from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 
 
-API_KEY = "AIzaSyDnDiwoxl1doc9iLBz2O7u8UVp0kLgnmLI"  
+API_KEY = os.getenv("GOOGLE_API_KEY")
+
+if not API_KEY:
+    st.error("⚠️ Google API Key not found! Please create a .env file containing GOOGLE_API_KEY=your_key")
+    st.stop()
+
 DB_FAISS_PATH = "vectorstore/db_faiss"
 
 
