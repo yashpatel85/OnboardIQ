@@ -1,5 +1,7 @@
 🚀 Factorial24 OnboardIQ: AI-Powered Employee Onboarding Bot
 
+## 🔗 Live Streamlit App: https://onboardiq-bot.streamlit.app/
+
 📋 Project Overview
 
 OnboardIQ is a RAG-based (Retrieval-Augmented Generation) conversational AI designed to streamline the onboarding process at Factorial24. It allows new employees to query internal organizational data—including HR policies, technical project specifications, and team hierarchies—using natural language.
