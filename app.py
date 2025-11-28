@@ -1,5 +1,5 @@
 import os
-from dotenv import load_dotenv # <--- ADDED THIS
+from dotenv import load_dotenv
 from PIL import Image
 import streamlit as st
 from langchain_community.embeddings import HuggingFaceEmbeddings
@@ -8,10 +8,10 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 
-
+# Load environment variables
 load_dotenv()
 
-
+# API Key Validation
 if not os.getenv("GOOGLE_API_KEY"):
     st.error("⚠️ Google API Key not found! Please create a .env file containing GOOGLE_API_KEY=your_key")
     st.stop()
@@ -22,7 +22,7 @@ DB_FAISS_PATH = "vectorstore/db_faiss"
 try:
     im = Image.open("assets/factorial24_logo.ico")
 except FileNotFoundError:
-    st.warning("Logo not found in assets/factorial24_logo.ico. Using default.")
+    # Fallback if logo missing, though not ideal for production
     im = None 
 
 st.set_page_config(
@@ -32,7 +32,7 @@ st.set_page_config(
     initial_sidebar_state = "expanded"
 )
 
-
+# --- CSS STYLING (Unchanged) ---
 st.markdown("""
 <style>
     /* Main Header Styling */
@@ -58,6 +58,25 @@ st.markdown("""
 </style>
 """, unsafe_allow_html = True)
 
+# --- HELPER FUNCTIONS ---
+
+def is_personal_query(query):
+    """
+    Detects if a query is personal/conversational directed at the bot 
+    (e.g., identity, age, location) rather than the knowledge base.
+    """
+    query = query.lower().strip()
+    
+    # List of triggers that indicate a personal question about the bot
+    personal_triggers = [
+        "who are you", "what are you", "your name", "your age", 
+        "how old", "where do you live", "where are you", 
+        "tell me about yourself", "are you human", "are you ai",
+        "who created you", "what can you do", "hello", "hi", "hey"
+    ]
+    
+    # Check if any trigger phrase appears in the query
+    return any(trigger in query for trigger in personal_triggers)
 
 @st.cache_resource
 def load_knowledge_base():
@@ -71,35 +90,29 @@ def load_knowledge_base():
         model_kwargs = {'device': 'cpu'}
     )
     
-    
     try:
         db = FAISS.load_local(DB_FAISS_PATH, embeddings, allow_dangerous_deserialization = True)
     except Exception as e:
         st.error(f"⚠️ Critical Error: Could not load the knowledge base. \nDetails: {e}")
         return None
 
-    
     # 'k': 3 means we fetch the top 3 most relevant chunks
     retriever = db.as_retriever(search_kwargs = {'k': 3})
 
-    
-    # Using 'gemini-pro-latest' as confirmed working in your environment
-    
     llm = ChatGoogleGenerativeAI(
         model = "gemini-pro-latest", 
         temperature = 0.3,
         convert_system_message_to_human = True
     )
 
-    # Custom Persona Prompt
+    # UPDATED Custom Persona Prompt to handle Personal Questions vs Context
     custom_prompt_template = """
     You are 'OnboardIQ', the dedicated AI Assistant for Factorial24.
-    Your goal is to help employees navigate company policies, project details, and team structures efficiently.
-
-    Guidelines:
-    - Answer strictly based on the provided context.
-    - If the answer is not in the context, politely state that you don't have that information.
-    - Keep answers professional, concise, and friendly.
+    
+    Instructions:
+    1. IDENTITY & CHITCHAT: If the user asks about you (e.g., "Who are you?", "What do you do?", "How are you?"), answer naturally as OnboardIQ. You do NOT need the context for this.
+    2. KNOWLEDGE BASE: For questions about Factorial24, policies, projects, or teams, answer STRICTLY based on the provided context below.
+    3. UNKNOWN: If the answer is not in the context and it is not a question about your identity, politely state that you don't have that information.
 
     Context: {context}
 
@@ -109,7 +122,6 @@ def load_knowledge_base():
     """
     prompt = PromptTemplate(template = custom_prompt_template, input_variables = ['context', 'question'])
 
-    
     qa_chain = RetrievalQA.from_chain_type(
         llm = llm,
         chain_type = "stuff",
@@ -121,12 +133,12 @@ def load_knowledge_base():
     return qa_chain
 
 
+# --- SIDEBAR UI (Unchanged) ---
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/4712/4712035.png", width=80)
     st.title("Factorial24")
     st.markdown("### OnboardIQ Assistant")
     st.markdown("---")
-    
     
     st.markdown("### 💡 Quick Questions")
     st.info(
@@ -143,12 +155,12 @@ with st.sidebar:
     st.markdown("✅ Team Hierarchy")
     st.markdown("---")
     
-    # Clear Chat Button
     if st.button("🗑️ Clear Conversation", use_container_width = True):
         st.session_state.messages = []
         st.rerun()
 
 
+# --- MAIN CHAT INTERFACE ---
 st.markdown('<div class="main-header">🚀 OnboardIQ</div>', unsafe_allow_html = True)
 st.markdown('<div class="sub-header">Your AI Companion for navigating Factorial24</div>', unsafe_allow_html = True)
 
@@ -171,6 +183,9 @@ if prompt := st.chat_input("Ask a question about Factorial24..."):
     # 2. Process Response
     chain = load_knowledge_base()
     
+    # 3. Detect if this is a personal question
+    is_personal = is_personal_query(prompt)
+    
     if chain:
         with st.chat_message("assistant"):
             with st.spinner("🔍 Consulting the organizational knowledge base..."):
@@ -183,8 +198,9 @@ if prompt := st.chat_input("Ask a question about Factorial24..."):
                     # Display Answer
                     st.markdown(response_text)
                     
-                    # Display Citations (The "Wow" Factor)
-                    if source_docs:
+                    # Display Citations (The "Wow" Factor) - CONDITIONAL LOGIC
+                    # Only show docs if they exist AND it is NOT a personal question
+                    if source_docs and not is_personal:
                         with st.expander("📚 Reference Documents (Sources)"):
                             for i, doc in enumerate(source_docs):
                                 # Clean filename
